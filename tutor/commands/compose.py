@@ -326,9 +326,7 @@ def run(
     name="bindmount",
     help="Copy the contents of a container directory to a ready-to-bind-mount host directory",
 )
-@click.argument(
-    "service",
-)
+@click.argument("service")
 @click.argument("path")
 @click.pass_obj
 def bindmount_command(context: BaseComposeContext, service: str, path: str) -> None:
@@ -340,6 +338,39 @@ def bindmount_command(context: BaseComposeContext, service: str, path: str) -> N
     fmt.echo_info(
         f"Bind-mount volume created at {host_path}. You can now use it in all `local` and `dev` "
         f"commands with the `--volume={path}` option."
+    )
+
+
+@click.command(
+    name="copyfrom",
+    help="Copy files/folders from a container directory to the local filesystem.",
+)
+@click.argument("service")
+@click.argument("container_path")
+@click.argument(
+    "host_path",
+    type=click.Path(exists=True, dir_okay=True, file_okay=False, resolve_path=True),
+)
+@click.pass_obj
+def copyfrom(
+    context: BaseComposeContext, service: str, container_path: str, host_path: str
+) -> None:
+    tmp_container_path = "/tmp/mount"
+    command = f"cp --recursive --preserve {container_path} {tmp_container_path}"
+    config = tutor_config.load(context.root)
+    runner = context.job_runner(config)
+    runner.docker_compose(
+        "run",
+        "--rm",
+        "--no-deps",
+        "--user=0",
+        "--volume",
+        f"{host_path}:{tmp_container_path}",
+        service,
+        "sh",
+        "-e",
+        "-c",
+        command,
     )
 
 
@@ -490,6 +521,7 @@ def add_commands(command_group: click.Group) -> None:
     command_group.add_command(settheme)
     command_group.add_command(dc_command)
     command_group.add_command(run)
+    command_group.add_command(copyfrom)
     command_group.add_command(bindmount_command)
     command_group.add_command(execute)
     command_group.add_command(logs)
