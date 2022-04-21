@@ -7,12 +7,10 @@ import click
 from tutor import bindmounts
 from tutor import config as tutor_config
 from tutor import env as tutor_env
-from tutor import fmt, jobs, utils
-from tutor import serialize
+from tutor import fmt, hooks, jobs, serialize, utils
+from tutor.commands.context import BaseJobContext
 from tutor.exceptions import TutorError
 from tutor.types import Config
-from tutor.commands.context import BaseJobContext
-from tutor import hooks
 
 
 class ComposeJobRunner(jobs.BaseComposeJobRunner):
@@ -26,6 +24,10 @@ class ComposeJobRunner(jobs.BaseComposeJobRunner):
         """
         Run docker-compose with the right yml files.
         """
+        if "up" in command or "restart" in command or "run" in command:
+            hooks.Actions.COMPOSE_PROJECT_STARTED.do(
+                self.root, self.config, self.project_name
+            )
         self.__update_docker_compose_tmp()
         args = []
         for docker_compose_path in self.docker_compose_files:
