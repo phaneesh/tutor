@@ -15,7 +15,15 @@ FROM docker.io/python:3.7-slim-stretch
 # As per https://github.com/docker/compose/issues/3918
 COPY --from=library/docker:19.03 /usr/local/bin/docker /usr/bin/docker
 COPY --from=docker/compose:1.24.0 /usr/local/bin/docker-compose /usr/bin/docker-compose
-
+RUN apt-get update && apt-get install -y \
+    git \
+    # npm package system dependencies
+    autoconf \
+    automake \
+    # build-base \
+    libpng-dev \
+    pngquant
+    
 RUN pip install tutor
 RUN mkdir /opt/tutor
 ENV TUTOR_ROOT /opt/tutor
